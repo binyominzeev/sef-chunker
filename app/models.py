@@ -1,8 +1,13 @@
 """SQLAlchemy ORM models."""
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def _utcnow() -> datetime:
+    """Return current UTC datetime (timezone-aware)."""
+    return datetime.now(timezone.utc)
 
 
 class Book(Base):
@@ -11,7 +16,7 @@ class Book(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     sefaria_ref = Column(String(255), nullable=False, unique=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     chunks = relationship("Chunk", back_populates="book", cascade="all, delete-orphan")
     progress = relationship("Progress", back_populates="book", uselist=False, cascade="all, delete-orphan")
@@ -39,7 +44,7 @@ class Summary(Base):
     chunk_id = Column(Integer, ForeignKey("chunks.id"), nullable=False)
     prompt = Column(Text, nullable=False)
     summary = Column(Text, nullable=False)
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=_utcnow)
     model = Column(String(100), default="gpt-4o-mini")
     input_tokens = Column(Integer, default=0)
     output_tokens = Column(Integer, default=0)

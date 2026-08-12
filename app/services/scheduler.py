@@ -141,7 +141,10 @@ def _parse_time(time_str: str) -> tuple[int, int]:
     """Parse HH:MM time string into (hour, minute) tuple."""
     try:
         parts = time_str.split(":")
-        return int(parts[0]), int(parts[1])
+        hour, minute = int(parts[0]), int(parts[1])
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError(f"Out of range: {hour}:{minute:02d}")
+        return hour, minute
     except (ValueError, IndexError):
         logger.warning("Invalid time string '%s', defaulting to 08:00", time_str)
         return 8, 0

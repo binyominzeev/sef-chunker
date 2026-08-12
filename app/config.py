@@ -1,4 +1,5 @@
 """Application configuration using pydantic-settings."""
+import functools
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     app_title: str = "Sefaria Daily AI"
 
 
+@functools.lru_cache()
 def get_settings() -> Settings:
-    """Return application settings singleton."""
+    """Return application settings singleton (cached)."""
     return Settings()

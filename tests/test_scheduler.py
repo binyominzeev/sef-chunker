@@ -13,7 +13,8 @@ class TestParseTime:
     def test_invalid_time_defaults(self):
         assert _parse_time("invalid") == (8, 0)
         assert _parse_time("") == (8, 0)
-        assert _parse_time("25:00") == (25, 0)  # passes but hour is wrong
+        assert _parse_time("25:00") == (8, 0)  # out-of-range hour defaults to 08:00
+        assert _parse_time("12:60") == (8, 0)  # out-of-range minute defaults to 08:00
 
     def test_missing_minutes(self):
         assert _parse_time("10") == (8, 0)  # falls back
