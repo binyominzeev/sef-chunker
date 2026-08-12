@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Részletek generálása – Sefaria Daily AI{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-scissors me-2 text-primary"></i>Részletek generálása</h1>
+<div class="card col-md-6">
+  <div class="card-body">
+    <form method="post" action="/chunks/generate">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Könyv</label>
+        <select name="book_id" class="form-select" required>
+          {% for book in books %}
+          <option value="{{ book.id }}" {% if selected_book and selected_book.id == book.id %}selected{% endif %}>{{ book.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Felosztási mód</label>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="mode" id="modeEqual" value="equal" checked
+                 onchange="document.getElementById('equalOpts').classList.remove('d-none'); document.getElementById('charOpts').classList.add('d-none')">
+          <label class="form-check-label" for="modeEqual">Egyenlő napi részletekre</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="mode" id="modeChar" value="char_count"
+                 onchange="document.getElementById('charOpts').classList.remove('d-none'); document.getElementById('equalOpts').classList.add('d-none')">
+          <label class="form-check-label" for="modeChar">Karakterszám alapján</label>
+        </div>
+      </div>
+      <div id="equalOpts" class="mb-3">
+        <label class="form-label">Napok száma</label>
+        <input type="number" name="num_days" class="form-control" value="30" min="1" max="365">
+      </div>
+      <div id="charOpts" class="mb-3 d-none">
+        <label class="form-label">Karakterek száma részletenként</label>
+        <input type="number" name="char_count" class="form-control" value="1200" min="100">
+      </div>
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-scissors me-1"></i>Generálás
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

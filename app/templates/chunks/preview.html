@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Részlet előnézete – Sefaria Daily AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3"><i class="bi bi-eye me-2 text-primary"></i>Részlet #{{ chunk.chunk_number }}</h1>
+  <a href="/chunks/?book_id={{ chunk.book_id }}" class="btn btn-outline-secondary btn-sm">Vissza</a>
+</div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-file-text me-1"></i>Héber szöveg</div>
+      <div class="card-body chunk-preview">
+        <div class="hebrew-text">{{ chunk.hebrew_text }}</div>
+      </div>
+      <div class="card-footer text-muted small">{{ chunk.hebrew_text | length }} karakter · {{ chunk.estimated_tokens }} token</div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-translate me-1"></i>Magyar összefoglalás</div>
+      <div class="card-body">
+        {% if summary %}
+        <div class="summary-box">{{ summary.summary }}</div>
+        <div class="mt-2 text-muted small">
+          Modell: {{ summary.model }} · {{ summary.input_tokens }}+{{ summary.output_tokens }} token
+          {% if summary.cost_usd %} · ${{ "%.4f" | format(summary.cost_usd) }}{% endif %}
+        </div>
+        {% else %}
+        <div class="alert alert-secondary">Még nincs összefoglalás. Generáld a <a href="/prompt-lab/">Prompt Lab</a>-ban.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
