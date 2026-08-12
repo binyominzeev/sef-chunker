@@ -4,6 +4,10 @@
 <h1 class="h3 mb-4"><i class="bi bi-scissors me-2 text-primary"></i>Részletek generálása</h1>
 <div class="card col-md-6">
   <div class="card-body">
+    <div class="alert alert-warning small">
+      Ez a művelet tölti le újra a Sefaria-szakaszokat és hozza létre a chunkok hivatkozásait.
+      Lecseréli a könyv jelenlegi chunkjait, és az olvasási előrehaladást az első napra állítja.
+    </div>
     <form method="post" action="/chunks/generate">
       <div class="mb-3">
         <label class="form-label fw-semibold">Könyv</label>
@@ -35,7 +39,7 @@
         <input type="number" name="char_count" class="form-control" value="1200" min="100">
       </div>
       <button type="submit" class="btn btn-primary w-100">
-        <i class="bi bi-scissors me-1"></i>Generálás
+        <i class="bi bi-arrow-repeat me-1"></i>Chunkok újragenerálása Sefaria-linkekkel
       </button>
     </form>
   </div>

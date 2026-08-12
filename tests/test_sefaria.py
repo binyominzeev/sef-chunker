@@ -33,6 +33,10 @@ class TestSefariaImporter:
         assert result["title"] == "תומר דבורה"
         assert result["ref"] == "Tomer Devorah"
         assert len(result["text"]) > 0
+        assert result["segments"] == [
+            {"ref": "Tomer Devorah 1", "text": "פרק א\n\nטקסט ראשון"},
+            {"ref": "Tomer Devorah 2", "text": "פרק ב\n\nטקסט שני"},
+        ]
 
     @pytest.mark.asyncio
     async def test_fetch_book_not_found(self):
@@ -66,3 +70,14 @@ class TestSefariaImporter:
         importer = SefariaImporter()
         assert importer._flatten_text([]) == ""
         assert importer._flatten_text("") == ""
+
+    def test_extract_segments_uses_nested_indexes_for_refs(self):
+        importer = SefariaImporter()
+
+        segments = importer._extract_segments([["א", "ב"], ["ג"]], "Book")
+
+        assert segments == [
+            {"ref": "Book 1:1", "text": "א"},
+            {"ref": "Book 1:2", "text": "ב"},
+            {"ref": "Book 2:1", "text": "ג"},
+        ]

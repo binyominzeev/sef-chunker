@@ -30,8 +30,8 @@
   <div class="col-md-3">
     <div class="card text-center h-100">
       <div class="card-body">
-        <div class="display-6 text-info">{{ last_sent + 1 }}</div>
-        <div class="card-title text-muted">Mai részlet</div>
+        <div class="display-6 text-info">{{ scheduled_chunk.chunk_number if scheduled_chunk else '-' }}</div>
+        <div class="card-title text-muted">Következő küldés</div>
       </div>
     </div>
   </div>
@@ -42,6 +42,41 @@
         <div class="card-title text-muted">Hátralévő napok</div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-body">
+    <h5 class="card-title">Holnapi küldés</h5>
+    <p class="text-muted">Időpont: <strong>{{ send_time }}</strong>. A következő automatikus küldéshez válassz chunkot.</p>
+    <div id="scheduleAlert"></div>
+    <form class="row g-2 align-items-end" hx-post="/set-next-chunk" hx-target="#scheduleAlert" hx-swap="innerHTML">
+      <div class="col-sm-5 col-md-3">
+        <label class="form-label" for="nextChunk">Chunk</label>
+        <select class="form-select" id="nextChunk" name="chunk_number">
+          {% for number in range(1, chunk_count + 1) %}
+          <option value="{{ number }}" {% if scheduled_chunk and scheduled_chunk.chunk_number == number %}selected{% endif %}>{{ number }}. chunk</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check me-1"></i>Beállítás</button>
+      </div>
+    </form>
+    <hr>
+    <form class="row g-2 align-items-end" hx-post="/send-chunk" hx-target="#alerts" hx-swap="innerHTML">
+      <div class="col-sm-5 col-md-3">
+        <label class="form-label" for="testChunk">Meglévő nap tesztküldése</label>
+        <select class="form-select" id="testChunk" name="chunk_number">
+          {% for number in range(1, chunk_count + 1) %}
+          <option value="{{ number }}">{{ number }}. chunk</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-send me-1"></i>Tesztküldés</button>
+      </div>
+    </form>
   </div>
 </div>
 

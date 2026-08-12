@@ -6,6 +6,36 @@
   </div>
   <div class="card-body">
     {% if saved_note %}{{ saved_note | safe }}{% endif %}
-    <div class="summary-box">{{ result.summary }}</div>
+    {% if not saved %}
+    <form class="mb-3" hx-post="/prompt-lab/save" hx-target="#result" hx-swap="innerHTML">
+      <input type="hidden" name="book_id" value="{{ chunk.book_id }}">
+      <input type="hidden" name="chunk_id" value="{{ chunk.id }}">
+      <input type="hidden" name="model" value="{{ result.model | default('') }}">
+      <input type="hidden" name="prompt" value="{{ result.prompt | default('') }}">
+      <input type="hidden" name="summary" value="{{ result.summary }}">
+      <input type="hidden" name="input_tokens" value="{{ result.input_tokens }}">
+      <input type="hidden" name="output_tokens" value="{{ result.output_tokens }}">
+      <input type="hidden" name="cost_usd" value="{{ result.cost_usd }}">
+      <button type="submit" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-floppy me-1"></i>Mentés
+      </button>
+    </form>
+    {% endif %}
+    {% if start_url %}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Olvasás kezdete</a>
+      {% if next_start_url %}
+      <a href="{{ next_start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">Holnapi kezdés</a>
+      {% else %}
+      <span class="badge text-bg-success align-self-center">A könyv vége</span>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-3">
+      Ehhez a chunkhoz még nincs Sefaria-hivatkozás.
+      <a href="/chunks/generate?book_id={{ chunk.book_id }}">A chunkok újragenerálása</a> szükséges.
+    </div>
+    {% endif %}
+    <div class="summary-box">{{ result.summary | markdown | safe }}</div>
   </div>
 </div>

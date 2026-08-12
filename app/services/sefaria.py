@@ -1,11 +1,26 @@
 """Sefaria API importer."""
 import logging
 import httpx
+import re
 from typing import Any
+from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
 
 SEFARIA_BASE_URL = "https://www.sefaria.org/api/texts"
+SEFARIA_SITE_URL = "https://www.sefaria.org"
+
+
+def build_sefaria_url(ref: str) -> str:
+    """Build the canonical public Sefaria URL for a textual reference."""
+    match = re.fullmatch(r"(.*?)(?:\s+(\d+(?::\d+)*))?", ref.strip())
+    if not match:
+        raise ValueError("Sefaria reference cannot be empty")
+    title, sections = match.groups()
+    path = quote(title.replace(" ", "_"), safe="._-")
+    if sections:
+        path = f"{path}.{sections.replace(':', '.')}"
+    return f"{SEFARIA_SITE_URL}/{path}"
 
 
 class SefariaImporter:
@@ -35,11 +50,18 @@ class SefariaImporter:
         if "error" in data:
             raise ValueError(f"Sefaria error: {data['error']}")
         title = data.get("heTitle") or data.get("title") or ref
-        text = self._flatten_text(data.get("he", data.get("text", [])))
+        canonical_ref = data.get("ref", ref)
+        hebrew_text = data.get("he", data.get("text", []))
+        text = self._flatten_text(hebrew_text)
         if not text:
             raise ValueError(f"No Hebrew text found for '{ref}'")
         logger.info("Fetched %d characters for '%s'", len(text), title)
-        return {"title": title, "ref": data.get("ref", ref), "text": text}
+        return {
+            "title": title,
+            "ref": canonical_ref,
+            "text": text,
+            "segments": self._extract_segments(hebrew_text, canonical_ref),
+        }
 
     def _flatten_text(self, text_data: Any) -> str:
         """Recursively flatten nested Sefaria text arrays into a single string."""
@@ -53,3 +75,22 @@ class SefariaImporter:
                     parts.append(part)
             return "\n\n".join(parts)
         return ""
+
+    def _extract_segments(self, text_data: Any, base_ref: str) -> list[dict[str, str]]:
+        """Return non-empty Sefaria leaf texts with their canonical references."""
+        segments: list[dict[str, str]] = []
+
+        def visit(value: Any, path: list[int]) -> None:
+            if isinstance(value, str):
+                text = value.strip()
+                if text:
+                    suffix = ":".join(str(index) for index in path)
+                    segment_ref = f"{base_ref} {suffix}" if suffix else base_ref
+                    segments.append({"ref": segment_ref, "text": text})
+                return
+            if isinstance(value, list):
+                for index, item in enumerate(value, start=1):
+                    visit(item, [*path, index])
+
+        visit(text_data, [])
+        return segments

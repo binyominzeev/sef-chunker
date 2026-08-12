@@ -10,6 +10,16 @@
     <div class="card h-100">
       <div class="card-header fw-semibold"><i class="bi bi-file-text me-1"></i>Héber szöveg</div>
       <div class="card-body chunk-preview">
+        {% if start_url %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <a href="{{ start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Olvasás kezdete</a>
+          {% if next_start_url %}
+          <a href="{{ next_start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">Holnapi kezdés</a>
+          {% else %}
+          <span class="badge text-bg-success align-self-center">A könyv vége</span>
+          {% endif %}
+        </div>
+        {% endif %}
         <div class="hebrew-text">{{ chunk.hebrew_text }}</div>
       </div>
       <div class="card-footer text-muted small">{{ chunk.hebrew_text | length }} karakter · {{ chunk.estimated_tokens }} token</div>
@@ -20,13 +30,13 @@
       <div class="card-header fw-semibold"><i class="bi bi-translate me-1"></i>Magyar összefoglalás</div>
       <div class="card-body">
         {% if summary %}
-        <div class="summary-box">{{ summary.summary }}</div>
+        <div class="summary-box">{{ summary.summary | markdown | safe }}</div>
         <div class="mt-2 text-muted small">
           Modell: {{ summary.model }} · {{ summary.input_tokens }}+{{ summary.output_tokens }} token
           {% if summary.cost_usd %} · ${{ "%.4f" | format(summary.cost_usd) }}{% endif %}
         </div>
         {% else %}
-        <div class="alert alert-secondary">Még nincs összefoglalás. Generáld a <a href="/prompt-lab/">Prompt Lab</a>-ban.</div>
+        <div class="alert alert-secondary">Még nincs összefoglalás. Generáld a <a href="/prompt-lab/?book_id={{ chunk.book_id }}&amp;chunk_id={{ chunk.id }}">Prompt Lab</a>-ban.</div>
         {% endif %}
       </div>
     </div>

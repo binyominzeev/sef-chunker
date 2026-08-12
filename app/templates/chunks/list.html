@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3"><i class="bi bi-list-ol me-2 text-primary"></i>Részletek</h1>
-  <a href="/chunks/generate" class="btn btn-outline-primary btn-sm">Generálás</a>
+  <a href="/chunks/generate" class="btn btn-outline-primary btn-sm">Chunkok újragenerálása</a>
 </div>
 
 <form class="row g-2 mb-3" method="get" action="/chunks/">
@@ -24,6 +24,19 @@
 </form>
 
 {% if chunks %}
+<div class="alert alert-light border d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div>
+    <strong>Összefoglalók:</strong>
+    {{ cost_estimate.generated }} kész, {{ cost_estimate.pending }} hátravan
+  </div>
+  {% if cost_estimate %}
+  <div>
+    <strong>Becsült teljes költség:</strong>
+    ${{ "%.4f" | format(cost_estimate.total) }}
+    <small class="text-muted">({{ cost_estimate.model }}, kb. {{ cost_estimate.output_tokens }} kimeneti token/chunk)</small>
+  </div>
+  {% endif %}
+</div>
 <div class="table-responsive">
   <table class="table table-hover table-sm align-middle">
     <thead class="table-light">
@@ -32,6 +45,8 @@
         <th>Részlet</th>
         <th>Karakterek</th>
         <th>Becsült tokenek</th>
+        <th>Sefaria</th>
+        <th>Összefoglaló</th>
         <th>Előnézet</th>
       </tr>
     </thead>
@@ -42,6 +57,28 @@
         <td>{{ chunk.chunk_number }}</td>
         <td>{{ chunk.hebrew_text | length }}</td>
         <td>{{ chunk.estimated_tokens }}</td>
+        <td>
+          {% set links = chunk_links[chunk.id] %}
+          {% if links.start_url %}
+          <div class="d-flex flex-wrap gap-1">
+            <a href="{{ links.start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Kezdés</a>
+            {% if links.next_start_url %}
+            <a href="{{ links.next_start_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">Következő</a>
+            {% else %}
+            <span class="badge text-bg-success align-self-center">A könyv vége</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <a href="/chunks/generate?book_id={{ chunk.book_id }}" class="btn btn-sm btn-outline-warning">Újragenerálás szükséges</a>
+          {% endif %}
+        </td>
+        <td>
+          {% if chunk_status[chunk.id] %}
+          <span class="badge text-bg-success">Kész</span>
+          {% else %}
+          <span class="badge text-bg-secondary">Nincs még</span>
+          {% endif %}
+        </td>
         <td><a href="/chunks/{{ chunk.id }}/preview" class="btn btn-sm btn-outline-info">Előnézet</a></td>
       </tr>
     {% endfor %}

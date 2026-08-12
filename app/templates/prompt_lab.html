@@ -14,14 +14,20 @@
                     hx-get="/prompt-lab/chunks" hx-target="#chunkContainer" hx-trigger="change" hx-include="[name='book_id']">
               <option value="">Válassz könyvet...</option>
               {% for book in books %}
-              <option value="{{ book.id }}">{{ book.title }}</option>
+              <option value="{{ book.id }}" {% if book.id == selected_book_id %}selected{% endif %}>{{ book.title }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="mb-3" id="chunkContainer">
             <label class="form-label">Részlet</label>
-            <select name="chunk_id" class="form-select" id="chunkSelect">
+            <select name="chunk_id" class="form-select" id="chunkSelect" {% if not selected_chunks %}disabled{% endif %}>
+              {% if selected_chunks %}
+              {% for chunk in selected_chunks %}
+              <option value="{{ chunk.id }}" {% if chunk.id == selected_chunk_id %}selected{% endif %}>Chunk {{ chunk.chunk_number }}</option>
+              {% endfor %}
+              {% else %}
               <option value="">Először válassz könyvet</option>
+              {% endif %}
             </select>
           </div>
           <div class="row g-2 mb-3">
@@ -44,9 +50,6 @@
             <button type="submit" class="btn btn-primary flex-fill">
               <span id="spinner" class="htmx-indicator spinner-border spinner-border-sm me-1"></span>
               <i class="bi bi-play-fill me-1"></i>Generálás
-            </button>
-            <button type="submit" name="save" value="1" class="btn btn-outline-success">
-              <i class="bi bi-floppy me-1"></i>Mentés
             </button>
           </div>
         </form>

@@ -69,3 +69,54 @@ class TestSplitByChars:
         gen = ChunkGenerator()
         chunks = gen.split_by_chars("שלום עולם " * 200, 500)
         assert all(c.strip() for c in chunks)
+
+
+class TestReferencedSegments:
+    SEGMENTS = [
+        {"ref": "Book 1:1", "text": "א" * 10},
+        {"ref": "Book 1:2", "text": "ב" * 10},
+        {"ref": "Book 1:3", "text": "ג" * 10},
+    ]
+
+    def test_split_segments_keeps_reference_boundaries(self):
+        gen = ChunkGenerator()
+
+        chunks = gen.split_segments_by_chars(self.SEGMENTS, 20)
+
+        assert chunks == [
+            {
+                "hebrew_text": "א" * 10,
+                "start_ref": "Book 1:1",
+                "end_ref": "Book 1:1",
+            },
+            {
+                "hebrew_text": "ב" * 10,
+                "start_ref": "Book 1:2",
+                "end_ref": "Book 1:2",
+            },
+            {
+                "hebrew_text": "ג" * 10,
+                "start_ref": "Book 1:3",
+                "end_ref": "Book 1:3",
+            },
+        ]
+
+    def test_split_segments_equal_preserves_all_text_and_refs(self):
+        gen = ChunkGenerator()
+
+        chunks = gen.split_segments_equal(self.SEGMENTS, 2)
+
+        assert "".join(chunk["hebrew_text"].replace("\n", "") for chunk in chunks) == "".join(
+            segment["text"] for segment in self.SEGMENTS
+        )
+        assert [chunk["start_ref"] for chunk in chunks] == ["Book 1:1", "Book 1:2", "Book 1:3"]
+        assert [chunk["end_ref"] for chunk in chunks] == ["Book 1:1", "Book 1:2", "Book 1:3"]
+
+    def test_single_oversized_segment_is_not_split(self):
+        gen = ChunkGenerator()
+
+        chunks = gen.split_segments_by_chars([{"ref": "Book 1:1", "text": "א" * 100}], 10)
+
+        assert chunks == [
+            {"hebrew_text": "א" * 100, "start_ref": "Book 1:1", "end_ref": "Book 1:1"}
+        ]

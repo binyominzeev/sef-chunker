@@ -1,7 +1,7 @@
 """Chunk generator service."""
 import logging
 import re
-from typing import List
+from typing import List, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +11,36 @@ PARAGRAPH_BOUNDARY = re.compile(r"\n{2}")
 SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?:׃])\s+")
 
 
+class SefariaSegment(TypedDict):
+    ref: str
+    text: str
+
+
+class ReferencedChunk(TypedDict):
+    hebrew_text: str
+    start_ref: str
+    end_ref: str
+
+
 class ChunkGenerator:
     """Splits book text into daily portions."""
+
+    def split_segments_equal(
+        self, segments: List[SefariaSegment], num_days: int
+    ) -> List[ReferencedChunk]:
+        """Split referenced Sefaria segments into roughly equal daily portions."""
+        if num_days <= 0:
+            raise ValueError("num_days must be positive")
+        target_size = max(1, self._segments_length(segments) // num_days)
+        return self._split_segments(segments, target_size)
+
+    def split_segments_by_chars(
+        self, segments: List[SefariaSegment], char_count: int
+    ) -> List[ReferencedChunk]:
+        """Split referenced Sefaria segments into portions near char_count."""
+        if char_count <= 0:
+            raise ValueError("char_count must be positive")
+        return self._split_segments(segments, char_count)
 
     def split_equal(self, text: str, num_days: int) -> List[str]:
         """Split text into num_days roughly equal portions.
@@ -95,3 +123,39 @@ class ChunkGenerator:
 
         # Fall back to target position
         return target
+
+    def _split_segments(
+        self, segments: List[SefariaSegment], target_size: int
+    ) -> List[ReferencedChunk]:
+        """Join whole Sefaria segments without splitting their references."""
+        clean_segments = [segment for segment in segments if segment["text"].strip()]
+        chunks: List[ReferencedChunk] = []
+        current_segments: List[SefariaSegment] = []
+        current_length = 0
+
+        for segment in clean_segments:
+            text = segment["text"].strip()
+            separator_length = 2 if current_segments else 0
+            prospective_length = current_length + separator_length + len(text)
+
+            if current_segments and prospective_length > target_size:
+                chunks.append(self._make_referenced_chunk(current_segments))
+                current_segments = []
+                current_length = 0
+
+            current_segments.append({"ref": segment["ref"], "text": text})
+            current_length += (2 if current_length else 0) + len(text)
+
+        if current_segments:
+            chunks.append(self._make_referenced_chunk(current_segments))
+        return chunks
+
+    def _segments_length(self, segments: List[SefariaSegment]) -> int:
+        return sum(len(segment["text"].strip()) for segment in segments if segment["text"].strip())
+
+    def _make_referenced_chunk(self, segments: List[SefariaSegment]) -> ReferencedChunk:
+        return {
+            "hebrew_text": "\n\n".join(segment["text"] for segment in segments),
+            "start_ref": segments[0]["ref"],
+            "end_ref": segments[-1]["ref"],
+        }

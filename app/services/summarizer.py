@@ -12,6 +12,7 @@ PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "summary.txt"
 # Cost per 1K tokens (approximate, adjust as needed)
 COST_PER_1K_INPUT = {"gpt-4o": 0.005, "gpt-4o-mini": 0.000150, "gpt-3.5-turbo": 0.0005}
 COST_PER_1K_OUTPUT = {"gpt-4o": 0.015, "gpt-4o-mini": 0.000600, "gpt-3.5-turbo": 0.0015}
+DEFAULT_ESTIMATED_OUTPUT_TOKENS = 200
 
 
 class AISummarizer:
@@ -59,7 +60,7 @@ class AISummarizer:
         summary_text = response.output_text
         input_tokens = response.usage.input_tokens if response.usage else 0
         output_tokens = response.usage.output_tokens if response.usage else 0
-        cost = self._estimate_cost(model, input_tokens, output_tokens)
+        cost = estimate_cost(model, input_tokens, output_tokens)
 
         logger.info(
             "Summary generated: %d in / %d out tokens, cost=$%.4f",
@@ -79,8 +80,15 @@ class AISummarizer:
             return PROMPT_PATH.read_text(encoding="utf-8")
         return "Summarize the following Hebrew text in Hungarian:\n\n{text}"
 
-    @staticmethod
-    def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-        in_cost = next((v for k, v in COST_PER_1K_INPUT.items() if k in model), 0.002)
-        out_cost = next((v for k, v in COST_PER_1K_OUTPUT.items() if k in model), 0.002)
-        return (input_tokens * in_cost + output_tokens * out_cost) / 1000
+
+
+def estimate_tokens(text: str) -> int:
+    """Approximate token count using the same ratio as generated chunks."""
+    return max(1, len(text) // 3)
+
+
+def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    """Estimate OpenAI cost in USD from token counts and the configured model."""
+    in_cost = next((v for k, v in COST_PER_1K_INPUT.items() if k in model), 0.002)
+    out_cost = next((v for k, v in COST_PER_1K_OUTPUT.items() if k in model), 0.002)
+    return (input_tokens * in_cost + output_tokens * out_cost) / 1000

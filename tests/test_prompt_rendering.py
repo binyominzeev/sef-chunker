@@ -1,6 +1,7 @@
 """Tests for prompt template rendering."""
 import pytest
 from pathlib import Path
+from app.routes import prompt_lab
 
 
 class TestPromptRendering:
@@ -24,3 +25,11 @@ class TestPromptRendering:
         prompt_path = Path(__file__).parent.parent / "app" / "prompts" / "summary.txt"
         content = prompt_path.read_text(encoding="utf-8")
         assert len(content.strip()) > 50, "Prompt should have substantial content"
+
+    def test_save_default_prompt_persists_template(self, monkeypatch, tmp_path):
+        prompt_path = tmp_path / "summary.txt"
+        monkeypatch.setattr(prompt_lab, "_default_prompt_path", lambda: prompt_path)
+
+        prompt_lab._save_default_prompt("Custom prompt: {text}")
+
+        assert prompt_lab._load_default_prompt() == "Custom prompt: {text}"

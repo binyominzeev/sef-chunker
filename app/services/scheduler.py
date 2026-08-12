@@ -69,8 +69,6 @@ async def send_daily_chunk(db: Session) -> dict[str, Any]:
     Returns:
         Dictionary with 'message' key describing the result.
     """
-    from app.services.summarizer import AISummarizer, PROMPT_PATH
-    from app.services.telegram_service import send_message, format_daily_message
     from app.routes.settings import _get_setting
 
     book = db.query(models.Book).first()
@@ -83,19 +81,59 @@ async def send_daily_chunk(db: Session) -> dict[str, Any]:
         db.add(progress)
         db.commit()
 
-    next_chunk_num = progress.last_sent_chunk + 1
+    scheduled_setting_key = f"next_chunk_{book.id}"
+    scheduled_chunk = _get_setting(db, scheduled_setting_key)
+    try:
+        next_chunk_num = int(scheduled_chunk) if scheduled_chunk else progress.last_sent_chunk + 1
+    except ValueError:
+        next_chunk_num = progress.last_sent_chunk + 1
+
     total_chunks = db.query(models.Chunk).filter(models.Chunk.book_id == book.id).count()
 
     if next_chunk_num > total_chunks:
         return {"message": "All chunks have been sent. The reading is complete!"}
 
+    return await _send_chunk(db, book, next_chunk_num, total_chunks, advance_progress=True)
+
+
+async def send_chunk(db: Session, chunk_number: int) -> dict[str, Any]:
+    """Send an existing chunk without changing the daily progress."""
+    book = db.query(models.Book).first()
+    if not book:
+        return {"message": "No book configured."}
+    total_chunks = db.query(models.Chunk).filter(models.Chunk.book_id == book.id).count()
+    if chunk_number < 1 or chunk_number > total_chunks:
+        return {"message": f"Chunk {chunk_number} not found."}
+    return await _send_chunk(db, book, chunk_number, total_chunks, advance_progress=False)
+
+
+async def _send_chunk(
+    db: Session,
+    book: models.Book,
+    chunk_number: int,
+    total_chunks: int,
+    advance_progress: bool,
+) -> dict[str, Any]:
+    from app.services.summarizer import AISummarizer, PROMPT_PATH
+    from app.services.telegram_service import send_message, format_daily_message
+    from app.routes.settings import _get_setting, _set_setting
+
     chunk = (
         db.query(models.Chunk)
-        .filter(models.Chunk.book_id == book.id, models.Chunk.chunk_number == next_chunk_num)
+        .filter(models.Chunk.book_id == book.id, models.Chunk.chunk_number == chunk_number)
         .first()
     )
     if not chunk:
-        return {"message": f"Chunk {next_chunk_num} not found."}
+        return {"message": f"Chunk {chunk_number} not found."}
+
+    next_chunk = (
+        db.query(models.Chunk)
+        .filter(
+            models.Chunk.book_id == book.id,
+            models.Chunk.chunk_number == chunk_number + 1,
+        )
+        .first()
+    )
 
     # Get or generate summary
     summary_obj = (
@@ -123,18 +161,25 @@ async def send_daily_chunk(db: Session) -> dict[str, Any]:
 
     message = format_daily_message(
         book_title=book.title,
-        day=next_chunk_num,
+        day=chunk_number,
         total_days=total_chunks,
         start_ref=chunk.start_ref or "",
         end_ref=chunk.end_ref or "",
+        next_start_ref=next_chunk.start_ref if next_chunk else None,
         summary=summary_obj.summary,
     )
     await send_message(message)
 
-    progress.last_sent_chunk = next_chunk_num
-    db.commit()
-    logger.info("Sent chunk %d of %d for book '%s'", next_chunk_num, total_chunks, book.title)
-    return {"message": f"Sent chunk {next_chunk_num} of {total_chunks}: {book.title}"}
+    if advance_progress:
+        progress = db.query(models.Progress).filter(models.Progress.book_id == book.id).first()
+        if not progress:
+            progress = models.Progress(book_id=book.id, last_sent_chunk=0)
+            db.add(progress)
+        progress.last_sent_chunk = chunk_number
+        _set_setting(db, f"next_chunk_{book.id}", str(chunk_number + 1))
+        db.commit()
+    logger.info("Sent chunk %d of %d for book '%s'", chunk_number, total_chunks, book.title)
+    return {"message": f"Sent chunk {chunk_number} of {total_chunks}: {book.title}"}
 
 
 def _parse_time(time_str: str) -> tuple[int, int]:
