@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Könyv importálása – Sefaria Daily AI{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-6">
+<h1 class="h3 mb-4"><i class="bi bi-cloud-download me-2 text-primary"></i>Könyv importálása</h1>
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="/books/import">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sefaria referencia</label>
+        <input type="text" name="sefaria_ref" class="form-control" placeholder="pl. Tomer Devorah" required>
+        <div class="form-text">A Sefaria könyv pontos neve vagy referenciája.</div>
+      </div>
+      <div class="mb-3">
+        <div class="text-muted small">Példák: <code>Tomer Devorah</code>, <code>Shaarei Teshuvah</code>, <code>Pirkei Avot</code></div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-cloud-download me-1"></i>Importálás
+      </button>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}

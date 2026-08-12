@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Beállítások – Sefaria Daily AI{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-gear me-2 text-primary"></i>Beállítások</h1>
+<div id="settingsAlert"></div>
+<div class="card col-md-7">
+  <div class="card-body">
+    <form hx-post="/settings/save" hx-target="#settingsAlert" hx-swap="innerHTML">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">OpenAI API kulcs</label>
+        <input type="password" name="openai_api_key" class="form-control" value="{{ settings.openai_api_key or '' }}" placeholder="sk-...">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Telegram Bot Token</label>
+        <input type="password" name="telegram_bot_token" class="form-control" value="{{ settings.telegram_bot_token or '' }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Telegram Chat ID</label>
+        <input type="text" name="telegram_chat_id" class="form-control" value="{{ settings.telegram_chat_id or '' }}">
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col">
+          <label class="form-label fw-semibold">Alapértelmezett modell</label>
+          <input type="text" name="default_model" class="form-control" value="{{ settings.default_model or 'gpt-4o-mini' }}">
+        </div>
+        <div class="col">
+          <label class="form-label fw-semibold">Napi küldési időpont</label>
+          <input type="time" name="daily_send_time" class="form-control" value="{{ settings.daily_send_time or '08:00' }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-floppy me-1"></i>Mentés
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+<div class="card">
+  <div class="card-header fw-semibold d-flex justify-content-between">
+    <span><i class="bi bi-text-paragraph me-1"></i>Eredmény</span>
+    <span class="text-muted small">{{ result.input_tokens }}↑ {{ result.output_tokens }}↓ token
+      {% if result.cost_usd %} · ${{ "%.4f" | format(result.cost_usd) }}{% endif %}</span>
+  </div>
+  <div class="card-body">
+    {% if saved_note %}{{ saved_note | safe }}{% endif %}
+    <div class="summary-box">{{ result.summary }}</div>
+  </div>
+</div>

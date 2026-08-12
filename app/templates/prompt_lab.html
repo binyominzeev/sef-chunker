@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Prompt Lab – Sefaria Daily AI{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-cpu me-2 text-primary"></i>Prompt Lab</h1>
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header fw-semibold">Beállítások</div>
+      <div class="card-body">
+        <form hx-post="/prompt-lab/generate" hx-target="#result" hx-swap="innerHTML" hx-indicator="#spinner">
+          <div class="mb-3">
+            <label class="form-label">Könyv</label>
+            <select name="book_id" class="form-select" required
+                    hx-get="/prompt-lab/chunks" hx-target="#chunkContainer" hx-trigger="change" hx-include="[name='book_id']">
+              <option value="">Válassz könyvet...</option>
+              {% for book in books %}
+              <option value="{{ book.id }}">{{ book.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="chunkContainer">
+            <label class="form-label">Részlet</label>
+            <select name="chunk_id" class="form-select" id="chunkSelect">
+              <option value="">Először válassz könyvet</option>
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col">
+              <label class="form-label">Modell</label>
+              <select name="model" class="form-select form-select-sm">
+                {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col">
+              <label class="form-label">Hőmérséklet</label>
+              <input type="number" name="temperature" class="form-control form-control-sm" value="0.7" min="0" max="2" step="0.1">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Prompt</label>
+            <textarea name="prompt" class="form-control font-monospace" rows="8" required>{{ prompt_template }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">
+              <span id="spinner" class="htmx-indicator spinner-border spinner-border-sm me-1"></span>
+              <i class="bi bi-play-fill me-1"></i>Generálás
+            </button>
+            <button type="submit" name="save" value="1" class="btn btn-outline-success">
+              <i class="bi bi-floppy me-1"></i>Mentés
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div id="result">
+      <div class="card h-100">
+        <div class="card-body text-center text-muted py-5">
+          <i class="bi bi-cpu display-4"></i>
+          <p class="mt-2">Az eredmény itt jelenik meg.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

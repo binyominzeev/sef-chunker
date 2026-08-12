@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Részletek – Sefaria Daily AI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3"><i class="bi bi-list-ol me-2 text-primary"></i>Részletek</h1>
+  <a href="/chunks/generate" class="btn btn-outline-primary btn-sm">Generálás</a>
+</div>
+
+<form class="row g-2 mb-3" method="get" action="/chunks/">
+  <div class="col-md-4">
+    <select name="book_id" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Válassz könyvet...</option>
+      {% for book in books %}
+      <option value="{{ book.id }}" {% if selected_book and selected_book.id == book.id %}selected{% endif %}>{{ book.title }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if selected_book %}
+  <div class="col-md-4">
+    <input type="text" name="search" class="form-control form-control-sm" placeholder="Keresés..." value="{{ search or '' }}">
+  </div>
+  <div class="col-auto"><button type="submit" class="btn btn-sm btn-outline-secondary">Keresés</button></div>
+  {% endif %}
+</form>
+
+{% if chunks %}
+<div class="table-responsive">
+  <table class="table table-hover table-sm align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Részlet</th>
+        <th>Karakterek</th>
+        <th>Becsült tokenek</th>
+        <th>Előnézet</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for chunk in chunks %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ chunk.chunk_number }}</td>
+        <td>{{ chunk.hebrew_text | length }}</td>
+        <td>{{ chunk.estimated_tokens }}</td>
+        <td><a href="/chunks/{{ chunk.id }}/preview" class="btn btn-sm btn-outline-info">Előnézet</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif selected_book %}
+<div class="alert alert-info">Nincsenek részletek. <a href="/chunks/generate?book_id={{ selected_book.id }}">Generálj részleteket</a>.</div>
+{% else %}
+<div class="alert alert-secondary">Válassz könyvet a részletek megtekintéséhez.</div>
+{% endif %}
+{% endblock %}
