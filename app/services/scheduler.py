@@ -14,6 +14,21 @@ _scheduler: Optional[AsyncIOScheduler] = None
 JOB_ID = "daily_send"
 
 
+def _get_active_book(db: Session) -> Optional[models.Book]:
+    """Return the configured active book, falling back to the first book."""
+    from app.routes.settings import _get_setting
+
+    active_book_id = _get_setting(db, "active_book_id")
+    if active_book_id:
+        try:
+            book = db.query(models.Book).filter(models.Book.id == int(active_book_id)).first()
+            if book:
+                return book
+        except ValueError:
+            pass
+    return db.query(models.Book).first()
+
+
 def start_scheduler() -> None:
     """Initialize and start the APScheduler."""
     global _scheduler
@@ -71,7 +86,7 @@ async def send_daily_chunk(db: Session) -> dict[str, Any]:
     """
     from app.routes.settings import _get_setting
 
-    book = db.query(models.Book).first()
+    book = _get_active_book(db)
     if not book:
         return {"message": "No book configured."}
 
@@ -98,7 +113,7 @@ async def send_daily_chunk(db: Session) -> dict[str, Any]:
 
 async def send_chunk(db: Session, chunk_number: int) -> dict[str, Any]:
     """Send an existing chunk without changing the daily progress."""
-    book = db.query(models.Book).first()
+    book = _get_active_book(db)
     if not book:
         return {"message": "No book configured."}
     total_chunks = db.query(models.Chunk).filter(models.Chunk.book_id == book.id).count()

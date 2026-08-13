@@ -18,7 +18,15 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templa
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """Render the main dashboard."""
     books = db.query(models.Book).all()
-    active_book = books[0] if books else None
+    from app.routes.settings import _get_setting
+    active_book_id = _get_setting(db, "active_book_id")
+    active_book = None
+    if active_book_id:
+        try:
+            active_book = db.query(models.Book).filter(models.Book.id == int(active_book_id)).first()
+        except ValueError:
+            pass
+    active_book = active_book or (books[0] if books else None)
     chunk_count = 0
     today_chunk = None
     scheduled_chunk = None
@@ -26,7 +34,6 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     send_time = "08:00"
 
     if active_book:
-        from app.routes.settings import _get_setting
         send_time = _get_setting(db, "daily_send_time") or "08:00"
         chunk_count = db.query(models.Chunk).filter(models.Chunk.book_id == active_book.id).count()
         progress = db.query(models.Progress).filter(models.Progress.book_id == active_book.id).first()
@@ -68,6 +75,19 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.post("/set-active-book", response_class=HTMLResponse)
+async def set_active_book(book_id: int = Form(...), db: Session = Depends(get_db)):
+    """Set the book used by the dashboard and daily sender."""
+    from app.routes.settings import _set_setting
+
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        return HTMLResponse('<div class="alert alert-danger">A kiválasztott könyv nem található.</div>')
+    _set_setting(db, "active_book_id", str(book.id))
+    db.commit()
+    return HTMLResponse(f'<div class="alert alert-success">Aktív könyv: {book.title}</div>')
+
+
 @router.post("/send-today", response_class=HTMLResponse)
 async def send_today(request: Request, db: Session = Depends(get_db)):
     """Manually send today's chunk."""
@@ -101,8 +121,15 @@ async def send_chunk_for_test(chunk_number: int = Form(...), db: Session = Depen
 @router.post("/set-next-chunk", response_class=HTMLResponse)
 async def set_next_chunk(chunk_number: int = Form(...), db: Session = Depends(get_db)):
     """Set which chunk the next scheduled send should deliver."""
-    from app.routes.settings import _set_setting
-    book = db.query(models.Book).first()
+    from app.routes.settings import _get_setting, _set_setting
+    active_book_id = _get_setting(db, "active_book_id")
+    book = None
+    if active_book_id:
+        try:
+            book = db.query(models.Book).filter(models.Book.id == int(active_book_id)).first()
+        except ValueError:
+            pass
+    book = book or db.query(models.Book).first()
     if not book:
         return HTMLResponse('<div class="alert alert-danger">Nincs aktív könyv.</div>')
     chunk = (

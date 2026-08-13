@@ -14,6 +14,46 @@ MOCK_RESPONSE = {
 
 class TestSefariaImporter:
     @pytest.mark.asyncio
+    async def test_get_available_books_fetches_and_caches_titles(self, tmp_path):
+        cache_path = tmp_path / "sefaria_books.json"
+        importer = SefariaImporter()
+        importer._fetch_book_list = AsyncMock(return_value=["Genesis", "Tomer Devorah"])
+
+        with patch("app.services.sefaria.BOOK_CACHE_PATH", cache_path):
+            result = await importer.get_available_books()
+            importer._fetch_book_list.assert_awaited_once()
+            importer._fetch_book_list.reset_mock()
+            cached_result = await importer.get_available_books()
+
+        assert result == ["Genesis", "Tomer Devorah"]
+        assert cached_result == result
+        importer._fetch_book_list.assert_not_awaited()
+        assert cache_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_fetch_book_list_flattens_index_contents(self):
+        importer = SefariaImporter()
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "contents": [
+                {"title": "Genesis"},
+                {"contents": [{"title": "Tomer Devorah"}, {"title": "Genesis"}]},
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client_class.return_value = mock_client
+
+            result = await importer._fetch_book_list()
+
+        assert result == ["Genesis", "Tomer Devorah"]
+
+    @pytest.mark.asyncio
     async def test_fetch_book_success(self):
         importer = SefariaImporter()
         mock_response = MagicMock()

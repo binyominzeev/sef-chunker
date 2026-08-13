@@ -12,8 +12,13 @@
     <form method="post" action="/books/import">
       <div class="mb-3">
         <label class="form-label fw-semibold">Sefaria referencia</label>
-        <input type="text" name="sefaria_ref" class="form-control" placeholder="pl. Tomer Devorah" required>
-        <div class="form-text">A Sefaria könyv pontos neve vagy referenciája.</div>
+        <input type="text" name="sefaria_ref" class="form-control" list="sefaria-books" placeholder="pl. Tomer Devorah" autocomplete="off" required>
+        <datalist id="sefaria-books">
+          {% for book in books %}
+          <option value="{{ book }}">
+          {% endfor %}
+        </datalist>
+        <div class="form-text">Kezdj el gépelni, majd válassz a Sefarián elérhető könyvek közül.</div>
       </div>
       <div class="mb-3">
         <div class="text-muted small">Példák: <code>Tomer Devorah</code>, <code>Shaarei Teshuvah</code>, <code>Pirkei Avot</code></div>

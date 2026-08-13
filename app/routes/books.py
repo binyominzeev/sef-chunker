@@ -23,7 +23,19 @@ async def list_books(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/import", response_class=HTMLResponse)
 async def import_form(request: Request):
-    return templates.TemplateResponse(request, "books/import.html", {})
+    importer = SefariaImporter()
+    error = None
+    try:
+        books = await importer.get_available_books()
+    except Exception as exc:
+        logger.exception("Failed to load Sefaria book list")
+        books = []
+        error = f"A Sefaria könyvlista nem tölthető be: {exc}"
+    return templates.TemplateResponse(
+        request,
+        "books/import.html",
+        {"books": books, "error": error},
+    )
 
 
 @router.post("/import", response_class=HTMLResponse)
@@ -33,10 +45,14 @@ async def import_book(request: Request, sefaria_ref: str = Form(...), db: Sessio
         book_data = await importer.fetch_book(sefaria_ref)
     except Exception as exc:
         logger.exception("Failed to import book %s", sefaria_ref)
+        try:
+            books = await importer.get_available_books()
+        except Exception:
+            books = []
         return templates.TemplateResponse(
             request,
             "books/import.html",
-            {"error": str(exc)},
+            {"error": str(exc), "books": books},
         )
 
     existing = db.query(models.Book).filter(models.Book.sefaria_ref == book_data["ref"]).first()
@@ -44,7 +60,10 @@ async def import_book(request: Request, sefaria_ref: str = Form(...), db: Sessio
         return templates.TemplateResponse(
             request,
             "books/import.html",
-            {"error": f"Book '{book_data['title']}' is already imported."},
+            {
+                "error": f"Book '{book_data['title']}' is already imported.",
+                "books": await importer.get_available_books(),
+            },
         )
 
     book = models.Book(title=book_data["title"], sefaria_ref=book_data["ref"])
