@@ -141,6 +141,25 @@ sudo systemctl enable --now sefaria-daily-ai
 
 Put a reverse proxy (nginx/Caddy) in front of port 8000 for TLS termination if you need HTTPS.
 
+### Updating the application
+
+To deploy a new version on the server, pull the code, synchronize the production dependencies, and restart the service:
+
+```bash
+cd /opt/sefaria-daily-ai
+git pull
+uv sync --no-dev
+sudo systemctl restart sefaria-daily-ai
+```
+
+Check that the service started successfully:
+
+```bash
+sudo systemctl status sefaria-daily-ai
+```
+
+Run `sudo systemctl daemon-reload` before the restart only when the systemd service file itself has changed. The SQLite database is kept in `data/` and is not replaced by this update procedure.
+
 ## Scheduler
 
 The app uses [APScheduler](https://apscheduler.readthedocs.io/) with an `AsyncIOScheduler` and a daily `CronTrigger`. The trigger's hour/minute are parsed from the `daily_send_time` setting (`HH:MM`, 24h format). Changing the send time on the Settings page reschedules the job in the running process without a restart.
